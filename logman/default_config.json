@@ -1,0 +1,83 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "base": {
+            "()": "logman.classes.MainFormatter",
+            "style": "{",
+            "validate": true,
+            "fmt": "{levelname: <8} {asctime: <8} {module_path: <17}"
+        },
+        "simple": {
+            "()": "logman.classes.SimpleFormatter",
+            "style": "{",
+            "validate": true,
+            "format": "{levelname: <9} : {message}"
+        },
+        "json": {
+            "()": "logman.classes.JSONFormatter",
+            "fmt_keys": {
+                "level": "levelname",
+                "message": "message",
+                "timestamp": "timestamp",
+                "logger": "name",
+                "module": "module",
+                "function": "funcName",
+                "line": "lineno"
+            }
+        }
+    },
+    "filters": {
+        "stdout_filter": {
+            "()": "logman.classes.InfoFilter"
+        },
+        "stderr_filter": {
+            "()": "logman.classes.ErrorFilter"
+        }
+    },
+    "handlers": {
+        "console_stdout": {
+            "class": "logging.StreamHandler",
+            "level": "WARNING",
+            "formatter": "simple",
+            "filters": ["stdout_filter"],
+            "stream": "ext://sys.stdout"
+        },
+        "console_stderr": {
+            "class": "logging.StreamHandler",
+            "level": "WARNING",
+            "formatter": "simple",
+            "filters": ["stderr_filter"],
+            "stream": "ext://sys.stderr"
+        },
+        "file": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "base",
+            "filename": "~/Documents/logman.log",
+            "when": "midnight",
+            "interval": 1,
+            "backupCount": 5
+        },
+        "jsonl": {
+            "class": "logging.handlers.TimedRotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "json",
+            "filename": "~/Documents/.logman.jsonl",
+            "when": "midnight",
+            "interval": 1,
+            "backupCount": 5
+        },
+        "queue_handler": {
+            "class": "logging.handlers.QueueHandler",
+            "handlers": ["console_stdout", "console_stderr", "file", "jsonl"],
+            "respect_handler_level": true
+        }
+    },
+    "loggers": {
+        "root": {
+            "level": "DEBUG",
+            "handlers": ["queue_handler"]
+        }
+    }
+}
