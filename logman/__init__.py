@@ -16,6 +16,7 @@ _Heavy inspiration and thanks to [mCoding](https://www.youtube.com/watch?v=9L77Q
 
 from importlib.metadata import version
 from logging.handlers import QueueHandler
+from pathlib import Path
 import logging
 import logging.config
 
@@ -30,7 +31,7 @@ from .utils import (
 __all__ = [
     'change_verbosity',
     'get_logger',
-    'LOG_NAME',
+    '_LOG_NAME',
     'MainLogger',
     'update_uid',
 ]
@@ -39,8 +40,9 @@ _log = None
 ExitHandlerHook()
 
 # Defaults
-LOG_NAME = 'logman'
-BACKUP_CONFIG: dict = {
+_LOG_NAME = 'logman'
+_BACKUP_FILE = Path('~/Desktop/logman.log').expanduser()
+_BACKUP_CONFIG: dict = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
@@ -74,16 +76,7 @@ BACKUP_CONFIG: dict = {
             "class": "logging.handlers.TimedRotatingFileHandler",
             "level": "DEBUG",
             "formatter": "base",
-            "filename": "~/Documents/logman.log",
-            "when": "midnight",
-            "interval": 1,
-            "backupCount": 5
-        },
-        "jsonl": {
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "level": "DEBUG",
-            "formatter": "json",
-            "filename": "~/Documents/.logman.jsonl",
+            "filename": _BACKUP_FILE,
             "when": "midnight",
             "interval": 1,
             "backupCount": 5
@@ -92,13 +85,13 @@ BACKUP_CONFIG: dict = {
     "loggers": {
         "root": {
             "level": "DEBUG",
-            "handlers": ["console_stdout", "file", "jsonl"],
+            "handlers": ["console_stdout", "file"],
         },
     },
 }
 
 
-def _init_log(config: dict | None = None, name: str = LOG_NAME) -> MainLogger:
+def _init_log(config: dict | None = None, name: str = _LOG_NAME) -> MainLogger:
     '''
     Initialises custom Logger and applies dictConfig to the root logger.
 
@@ -127,9 +120,9 @@ def _init_log(config: dict | None = None, name: str = LOG_NAME) -> MainLogger:
             queue_handler.listener.start()
 
     except (AttributeError, ValueError) as e:
-        logging.config.dictConfig(BACKUP_CONFIG)
+        logging.config.dictConfig(_BACKUP_CONFIG)
         log.warning(
-            'Backup config loaded. Log file in "/Users/Shared/io.log"')
+            f'Backup config loaded. Log file in "{_BACKUP_FILE}"')
         if type(e) is AttributeError:
             # QueueHandler init issue
             log.exception('Error starting queue_handler', e)
@@ -138,13 +131,12 @@ def _init_log(config: dict | None = None, name: str = LOG_NAME) -> MainLogger:
             log.exception('There are problems with the log config', e)
 
     except Exception as e:
-        logging.config.dictConfig(BACKUP_CONFIG)
+        logging.config.dictConfig(_BACKUP_CONFIG)
         log.error(
-            'Backup config loaded. Log file in "/Users/Shared/io.log"')
+            f'Backup config loaded. Log file in "{_BACKUP_FILE}"')
         log.exception('Unknown Error loading log config.', e)
 
-    log.info(
-        f'logman {version(__name__)} initialised.\nLog location: {file_paths[0]}')
+    log.info(f'logman {version(__name__)} initialised.')
     return log
 
 
