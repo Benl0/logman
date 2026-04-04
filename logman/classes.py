@@ -1,38 +1,44 @@
 from datetime import datetime, timezone
 from json import dumps
 from time import strftime, localtime
-from typing import override
 import atexit
 import logging
-import os
 import sys
 import traceback
 
+if sys.version_info.minor == 11:
+
+    def override(): ...
+elif sys.version_info.minor >= 12:
+    from typing import override
+else:
+    raise AttributeError('Only Python >=3.11 is supported')
+
 
 LOG_RECORD_BUILTIN_ATTRS = {
-    "args",
-    "asctime",
-    "created",
-    "exc_info",
-    "exc_text",
-    "filename",
-    "funcName",
-    "levelname",
-    "levelno",
-    "lineno",
-    "message",
-    "module",
-    "msecs",
-    "msg",
-    "name",
-    "pathname",
-    "process",
-    "processName",
-    "relativeCreated",
-    "stack_info",
-    "taskName",
-    "thread",
-    "threadName",
+    'args',
+    'asctime',
+    'created',
+    'exc_info',
+    'exc_text',
+    'filename',
+    'funcName',
+    'levelname',
+    'levelno',
+    'lineno',
+    'message',
+    'module',
+    'msecs',
+    'msg',
+    'name',
+    'pathname',
+    'process',
+    'processName',
+    'relativeCreated',
+    'stack_info',
+    'taskName',
+    'thread',
+    'threadName',
 }
 
 # ======================================================================
@@ -40,20 +46,21 @@ LOG_RECORD_BUILTIN_ATTRS = {
 
 
 class MainFormatter(logging.Formatter):
-    '''Custom log record formatter. Keeps messages aligned'''
+    """Custom log record formatter. Keeps messages aligned"""
+
     minimum_indent = 46
 
     @override
     def format(self, record):
-        '''Features multiline indentation inspired by the following:
-        https://stackoverflow.com/a/66855071'''
+        """Features multiline indentation inspired by the following:
+        https://stackoverflow.com/a/66855071"""
 
         # Merged attribute to help with formatting
         record.module_path = f'{record.name}:{record.lineno}'
         header = f'{super().format(record): <{self.minimum_indent}} : '
 
-        l = len(header) - 2
-        indent = ' ' * l
+        header_len = len(header) - 2
+        indent = ' ' * header_len
         indent += ': '
 
         first_line, *trailing = record.msg.splitlines(True)
@@ -62,9 +69,9 @@ class MainFormatter(logging.Formatter):
 
     @override
     def formatTime(self, record: logging.LogRecord, datefmt=None):
-        '''Cleaner default while keeping the possibility to set `datefmt`
+        """Cleaner default while keeping the possibility to set `datefmt`
 
-        New default format: `HH:mm:ss,SSSSSS`'''
+        New default format: `HH:mm:ss,SSSSSS`"""
         if datefmt:
             ct = localtime(record.created)
             s = strftime(datefmt, ct)
@@ -75,8 +82,8 @@ class MainFormatter(logging.Formatter):
 
 
 class SimpleFormatter(logging.Formatter):
-    '''Custom log record formatter. Keeps messages aligned
-    For the `simple` formatter'''
+    """Custom log record formatter. Keeps messages aligned
+    For the `simple` formatter"""
 
     @override
     def format(self, record):
@@ -86,10 +93,10 @@ class SimpleFormatter(logging.Formatter):
 
 
 class JSONFormatter(logging.Formatter):
-    '''Custom log record formatter. Reformats all to jsonl
+    """Custom log record formatter. Reformats all to jsonl
 
     Add additional info to the log via the `extra` parameter:
-    `log.info('msg', extra={"hello"="world"}`'''
+    `log.info('msg', extra={"hello"="world"}`"""
 
     uid = ''
 
@@ -105,14 +112,14 @@ class JSONFormatter(logging.Formatter):
     def _prep_log_to_dict(self, record: logging.LogRecord):
         always_fields = {
             'message': record.getMessage(),
-            'timestamp': datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat()
+            'timestamp': datetime.fromtimestamp(
+                record.created, tz=timezone.utc
+            ).isoformat(),
         }
         if record.exc_info is not None:
-            always_fields['exc_info'] = self.formatException(
-                record.exc_info)
+            always_fields['exc_info'] = self.formatException(record.exc_info)
         if record.stack_info is not None:
-            always_fields['stack_info'] = self.formatStack(
-                record.stack_info)
+            always_fields['stack_info'] = self.formatStack(record.stack_info)
 
         message = {
             key: msg_val
@@ -132,14 +139,16 @@ class JSONFormatter(logging.Formatter):
 
 
 class InfoFilter(logging.Filter):
-    '''Allows LogRecords of level INFO and below'''
+    """Allows LogRecords of level INFO and below"""
+
     @override
     def filter(self, record: logging.LogRecord):
         return record.levelno <= logging.INFO
 
 
 class ErrorFilter(logging.Filter):
-    '''Allows LogRecords of level WARNING and above'''
+    """Allows LogRecords of level WARNING and above"""
+
     @override
     def filter(self, record: logging.LogRecord):
         return record.levelno >= logging.WARNING
@@ -152,18 +161,22 @@ class MainLogger(logging.Logger):
         self.parent = logging.root
 
     @override
-    def exception(self, msg: str | None = None,
-                  exc: BaseException | None = None,
-                  popup: bool = False,
-                  limit: int | None = None,
-                  *args, **kwargs) -> None:
-        '''Override of the base exception method.
+    def exception(
+        self,
+        msg: str | None = None,
+        exc: BaseException | None = None,
+        popup: bool = False,
+        limit: int | None = None,
+        *args,
+        **kwargs,
+    ) -> None:
+        """Override of the base exception method.
 
         Args:
             msg: `str` Additional information
             exc: `BaseException` Called exception class
             popup: `bool` Create a popup window with traceback info
-            limit: `int` How many lines of the traceback to log. Defaults to all'''
+            limit: `int` How many lines of the traceback to log. Defaults to all"""
         if exc:
             exc_info = (type(exc), exc, exc.__traceback__)
         else:
@@ -171,17 +184,19 @@ class MainLogger(logging.Logger):
 
         if exc_info[0] is None:
             self.warning(
-                '"exc_logger" was called but no exception was found. There might be a bug here!')
+                '"exc_logger" was called but no exception was found. There might be a bug here!'
+            )
             return
 
         if msg is None:
             msg = 'An unxepcted error occured'
 
         exc_info[1].add_note(msg)
-        full_tb = str().join(traceback.format_exception(exc_info[0],
-                                                        value=exc_info[1],
-                                                        tb=exc_info[2],
-                                                        limit=limit))
+        full_tb = str().join(
+            traceback.format_exception(
+                exc_info[0], value=exc_info[1], tb=exc_info[2], limit=limit
+            )
+        )
 
         # FIXME: import message_box or add it as a class method
         # if popup:
@@ -190,15 +205,13 @@ class MainLogger(logging.Logger):
 
         extra_info: dict | None = kwargs.get('extra')
         if extra_info is None:
-            kwargs['extra'] = {
-                'exception': exc_info[1], 'exception_msg': msg}
+            kwargs['extra'] = {'exception': exc_info[1], 'exception_msg': msg}
         else:
             extra_info['exception'] = exc_info[1]
             extra_info['exception_msg'] = msg
 
         # stacklevel=2 to get lineno of original caller
-        self.log(logging.CRITICAL, full_tb,
-                 stacklevel=2, *args, **kwargs)
+        self.log(logging.CRITICAL, full_tb, stacklevel=2, *args, **kwargs)
 
     def get_module(self):
         raise NotImplementedError
@@ -212,12 +225,12 @@ class MainLogger(logging.Logger):
 
 
 class ExitHandlerHook:
-    '''Exit and Excpetion Handler hook.
+    """Exit and Excpetion Handler hook.
 
-    Will hook both sys.exit and sys.excepthook when initiated. 
+    Will hook both sys.exit and sys.excepthook when initiated.
     Raised exception will call `log.exception` and exit
 
-    Also runs double-duty and closes log's `queue_handler` thread'''
+    Also runs double-duty and closes log's `queue_handler` thread"""
 
     def __init__(self) -> None:
         self.exit_code = None
@@ -242,27 +255,36 @@ class ExitHandlerHook:
         self.base_exception = exc
         self.exception_type = exc_type
 
-        self.exception_tb_str = str().join(traceback.format_exception(
-            type(self.exception_type), value=exc, tb=exc.__traceback__))
+        self.exception_tb_str = str().join(
+            traceback.format_exception(
+                type(self.exception_type), value=exc, tb=exc.__traceback__
+            )
+        )
         # Commented out to avoid printing the exception twice directly to stderr
         # self._orig_exc_handler(exc_type, exc, *args)
 
     def wrap_up(self):
         from . import get_logger
+
         self.log: MainLogger = get_logger(__name__)
 
         if self.exit_code is not None and self.exit_code != 0:
-            self.log.warning(f'Exiting with errors: {self.exit_code}',
-                             extra={"rc": self.exit_code})
+            self.log.warning(
+                f'Exiting with errors: {self.exit_code}', extra={'rc': self.exit_code}
+            )
         elif self.exception_tb_str:
-            self.log.exception(f'\nSomething went wrong. Please read the message above and look back through the logs',
-                               exc=self.base_exception,
-                               popup=True,
-                               extra={"exc_type": self.exception_type,
-                                      "exc_msg": self.base_exception,
-                                      "rc": 1})
+            self.log.exception(
+                '\nSomething went wrong. Please read the message above and look back through the logs',
+                exc=self.base_exception,
+                popup=True,
+                extra={
+                    'exc_type': self.exception_type,
+                    'exc_msg': self.base_exception,
+                    'rc': 1,
+                },
+            )
         else:
-            self.log.info('Exiting program: 0', extra={"rc": 0})
+            self.log.info('Exiting program: 0', extra={'rc': 0})
 
         self._stop_queue_handler()
 
