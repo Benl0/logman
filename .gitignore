@@ -12,5 +12,6 @@ wheels/
 # Other
 .vscode/
 .idea/
+.ruff_cache/
 *.lock
 .python-version
