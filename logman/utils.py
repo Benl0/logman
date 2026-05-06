@@ -1,5 +1,6 @@
 from json import load
 from pathlib import Path
+from typing import Any
 import logging
 import os
 
@@ -46,21 +47,40 @@ def get_config() -> dict:
     return log_config
 
 
-def resolve_file_paths(config: dict) -> tuple[dict, list]:
-    """Resolve FileHandler file paths. Returns fixed config and filepaths"""
-    file_paths = list()
-    handlers_conf: dict[str, dict] = config.get('handlers')
+def resolve_filepaths(config: dict[str, Any]) -> dict[str, Any]:
+    """Resolve and expand file paths of file based Handlers.
 
+    Requires the full logging config as it will update values
+
+    :param config: Log config
+    :type config: dict[str, Any]
+    :raises TypeError: If no handlers are found in the config
+    :return: Tuple of amended config and the filepaths
+    :rtype: tuple[dict, list[Path]]
+    """
+    handlers_conf: dict[str, dict[str, Any]] | None = config.get('handlers')
+    if handlers_conf is None:
+        raise TypeError('Could not find handlers in config')
+
+    file_paths: list[Path] = list()
     for handle in handlers_conf.values():
         fp: str | None = handle.get('filename')
-        if fp is None:
-            continue
-        else:
+        if fp is not None:
             file_path = Path(fp).expanduser().resolve()
-            handle['filename'] = file_path
+            file_path = validate_filepath(file_path)
             file_paths.append(file_path)
+            handle['filename'] = file_path
 
-    return config, file_paths
+    return config
+
+
+def validate_filepath(fp: Path) -> Path:
+    """Check if filepath exists and creates it if not."""
+    if not fp.suffix:
+        fp = fp / 'logman.log'  # Ensures there is a filename at the end of the path
+    if not fp.parent.exists():
+        fp.parent.mkdir(parents=True, exist_ok=True)
+    return fp
 
 
 def update_uid(id: str):

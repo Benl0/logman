@@ -24,7 +24,7 @@ from .classes import ExitHandlerHook, MainLogger
 from .utils import (
     change_verbosity,
     get_config,
-    resolve_file_paths,
+    resolve_filepaths,
     update_uid,
 )
 
@@ -37,7 +37,6 @@ __all__ = [
 ]
 
 _log = None
-ExitHandlerHook()
 
 # Defaults
 _LOG_NAME = 'logman'
@@ -91,31 +90,41 @@ _BACKUP_CONFIG: dict = {
 }
 
 
-def _init_log(config: dict | None = None, name: str = _LOG_NAME) -> MainLogger:
+def _init_log(
+    config: dict | None = None, name: str = _LOG_NAME, exit_hook: bool = True
+) -> MainLogger:
     """
     Initialises custom Logger and applies dictConfig to the root logger.
 
     :param config: Logger config dictionary. If None,`log_config.json` will be used.
     :type config: dict | None
-    :param name: Name of the logger. Defaults to `LOG_NAME`.
+    :param name: Name of the logger. Defaults to `logman`.
     :type name: str | None
+    :param exit_hook: Enable exit exception hook. Defaults to `True`.
+    :type exit_hook: bool
     :return: Custom Logger class
     :rtype: MainLogger
     """
+    if exit_hook:
+        ExitHandlerHook()
+
     logging.setLoggerClass(MainLogger)
-    log: MainLogger = logging.getLogger(name)  # type: ignore
+    log: MainLogger = logging.getLogger(name)
 
     if config is None:
         config = get_config()
 
-    config, file_paths = resolve_file_paths(config)
+    config = resolve_filepaths(config)
 
     try:
         logging.config.dictConfig(config)
 
         # Setup Log Queue Handler
-        queue_handler: QueueHandler = logging.getHandlerByName('queue_handler')  # type: ignore
-        if queue_handler.listener is not None:
+        queue_handler: QueueHandler = logging.getHandlerByName('queue_handler')
+        if (
+            isinstance(queue_handler, QueueHandler)
+            and queue_handler.listener is not None
+        ):
             queue_handler.listener.start()
 
     except (AttributeError, ValueError) as e:
