@@ -1,18 +1,11 @@
 from datetime import datetime, timezone
 from json import dumps
 from time import strftime, localtime
+from typing import override
 import atexit
 import logging
 import sys
 import traceback
-
-if sys.version_info.minor == 11:
-
-    def override(): ...
-elif sys.version_info.minor >= 12:
-    from typing import override
-else:
-    raise AttributeError('Only Python >=3.11 is supported')
 
 
 LOG_RECORD_BUILTIN_ATTRS = {
@@ -225,7 +218,7 @@ class MainLogger(logging.Logger):
 
 
 class ExitHandlerHook:
-    """Exit and Excpetion Handler hook.
+    """Exit and Exception Handler hook.
 
     Will hook both sys.exit and sys.excepthook when initiated.
     Raised exception will call `log.exception` and exit
@@ -266,7 +259,7 @@ class ExitHandlerHook:
     def wrap_up(self):
         from . import get_logger
 
-        self.log: MainLogger = get_logger(__name__)
+        self.log: MainLogger = get_logger('exception-hook')
 
         if self.exit_code is not None and self.exit_code != 0:
             self.log.warning(

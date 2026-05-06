@@ -9,8 +9,6 @@ _Heavy inspiration and thanks to [mCoding](https://www.youtube.com/watch?v=9L77Q
 
 **To Do List:**
 - Selectively disable `stdout` and `stderr` output destinations
-- Add directory creation checks
-- Get accurate package.module name for log record
 - Minor formatting error. Additional empty line is added when logging exceptions
 """
 
@@ -150,6 +148,12 @@ def create_logger(*args, **kwargs) -> MainLogger:
     """
     Creates and returns MainLogger instance.
 
+    :param config: Logger config dictionary. If None,`log_config.json` will be used.
+    :type config: dict | None
+    :param name: Name of the logger. Defaults to `logman`.
+    :type name: str | None
+    :param exit_hook: Enable exit exception hook. Defaults to `True`.
+    :type exit_hook: bool
     :return: Custom Logger class
     :rtype: MainLogger
     """
