@@ -8,6 +8,12 @@ _Separated from another project that shall remain private._
 > [!WARNING]
 > Currently only tested on UNIX systems with `Py3.12` or above.
 
+## Install
+
+```sh
+pip install git+https://github.com/Benl0/logman.git
+```
+
 ## Usage
 
 1. Create a config dict. Use the [default_config.json](logman/default_config.json) as a guide. 
@@ -40,7 +46,7 @@ _Separated from another project that shall remain private._
 > _Use the [default_config.json](logman/default_config.json) as a guide. Seriously. It's really finnicky..._
 
 > [!TIP]
-> Within the config, it's recommended to specify `"style": "{"`. This is to allow character spacing via f string formatting syntax.
+> Within the config, it's recommended to specify `"style": "{"` for simple character spacing via f string formatting syntax.
 
 There are three Formatter classess:
 
@@ -105,6 +111,20 @@ Specify what goes to the JSON using the `fmt_keys` dict.
             "line": "lineno"
       }
    }
+}
+```
+
+```json
+{
+    "level": "INFO",
+    "message": "Informative message\nSecond line!",
+    "timestamp": "2026-05-13T14:56:05.122041+00:00",
+    "logger": "logman",
+    "module": "__init__",
+    "function": "main",
+    "line": 143,
+    "module_path": "main:143",
+    "id": "1234"
 }
 ```
 
